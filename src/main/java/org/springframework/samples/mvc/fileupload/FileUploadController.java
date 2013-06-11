@@ -57,7 +57,7 @@ public class FileUploadController {
 		return "fake text";
 	}
 	
-	@RequestMapping(value="/2", method=RequestMethod.PUT)
+	@RequestMapping(value="/2", method=RequestMethod.POST)
 	@ResponseBody
 	public ResponseEntity<Map<String,List<Map<String, Object>>>> processUpload2(
 						@RequestParam MultipartFile file, Model model) throws IOException {
