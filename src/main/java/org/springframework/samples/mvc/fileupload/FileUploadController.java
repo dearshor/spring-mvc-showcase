@@ -108,7 +108,18 @@ public class FileUploadController {
 		if (!distDir.exists()) {
 			distDir.mkdirs();
 		}
-		String uploadedFileName = file.getName();
+		
+		// Finding the fileName //
+        String uploadedFileName = "";
+        String contentDisposition = file.getHeader("content-disposition");
+        // TODO use regex to extract filename from content-disposition
+		for (String temp : contentDisposition.split(";"))
+        {
+          if (temp.trim().startsWith("filename"))
+           {
+              uploadedFileName = temp.substring(temp.indexOf('=') + 1).trim().replace("\"", "");
+           }
+        }
 		File distFile = new File(distDir, uploadedFileName);
 		BufferedOutputStream bout = new BufferedOutputStream(new FileOutputStream(distFile));
 		InputStream bin = file.getInputStream();
