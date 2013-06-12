@@ -1,0 +1,10 @@
+ * 从 /image/{fileName} 获取的参数 fileName 不包括文件扩展名，
+   如从 /image/foo.jpg 得到的 fileName 为：foo
+   
+ * GET /image/{fileName} 时如果资源未改变，直接返回 http 304
+ 
+ * 图片列表缩略图
+ 
+ * 删除操作
+ 
+ * 重构代码
