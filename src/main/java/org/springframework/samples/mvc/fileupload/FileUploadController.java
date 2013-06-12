@@ -1,24 +1,25 @@
 package org.springframework.samples.mvc.fileupload;
 
+import static org.springframework.http.HttpStatus.ACCEPTED;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.http.MediaType.IMAGE_JPEG;
+import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
@@ -28,11 +29,8 @@ import org.apache.commons.io.DirectoryWalker;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpRequest;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mvc.extensions.ajax.AjaxUtils;
 import org.springframework.stereotype.Controller;
@@ -56,6 +54,8 @@ public class FileUploadController extends DirectoryWalker<Map<String, Object>> {
 	private File destDir;
 	private String urlPrefix;
 
+	private String delUrlPrefix;
+
 
 	public FileUploadController() {
 		super();
@@ -78,10 +78,9 @@ public class FileUploadController extends DirectoryWalker<Map<String, Object>> {
 		model.addAttribute("ajaxRequest", AjaxUtils.isAjaxRequest(request));
 	}
 	
-	@RequestMapping(value = "/image/{fileName}", method = GET)
-	public @ResponseBody ResponseEntity<byte[]> image(@PathVariable String fileName) throws IOException {
+	@RequestMapping(value = "/image", method = GET)
+	public @ResponseBody ResponseEntity<byte[]> image(@RequestParam String fileName) throws IOException {
 		logger.debug("fileName: {}", fileName);
-		fileName += ".jpg";
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(IMAGE_JPEG);
 		headers.setContentDispositionFormData("imageFile", fileName);
@@ -109,8 +108,9 @@ public class FileUploadController extends DirectoryWalker<Map<String, Object>> {
 	@RequestMapping(value = {"/2","/3"},method=RequestMethod.GET)
 	@ResponseBody
 	public ResponseEntity<Map<String,List<Map<String, Object>>>> fileList(HttpServletRequest request) throws IOException {
-		urlPrefix = request.getContextPath() + "/fileupload/image/";
-		logger.debug("urlPrefix: {}", urlPrefix);
+		buildUrl(request);
+		logger.debug("urlPrefix: {}; delUrlPrefix: {}", urlPrefix, delUrlPrefix);
+		
 		Map<String,List<Map<String, Object>>> body = new LinkedHashMap<>();
 		List<Map<String, Object>> fileList = new ArrayList<>();
 		walk(destDir,fileList);
@@ -119,6 +119,11 @@ public class FileUploadController extends DirectoryWalker<Map<String, Object>> {
 		headers.setContentType(APPLICATION_JSON);
 		
 		return new ResponseEntity<>(body, headers, HttpStatus.OK);
+	}
+
+	private void buildUrl(HttpServletRequest request) {
+		urlPrefix = request.getContextPath() + "/fileupload/image?fileName=";
+		delUrlPrefix = request.getContextPath() + "/fileupload/delete?fileName=";
 	}
 	
 	@Override
@@ -130,7 +135,7 @@ public class FileUploadController extends DirectoryWalker<Map<String, Object>> {
 		fileInfo.put("size", FileUtils.sizeOf(file));
 		fileInfo.put("url", urlPrefix + file.getName());
 		fileInfo.put("thumbnail_url", "#");
-		fileInfo.put("delete_url", "#");
+		fileInfo.put("delete_url", delUrlPrefix + file.getName());
 		fileInfo.put("delete_type", "DELETE");
 		results.add(fileInfo);
 	}
@@ -138,8 +143,8 @@ public class FileUploadController extends DirectoryWalker<Map<String, Object>> {
 	@RequestMapping(value="/2", method=RequestMethod.POST)
 	@ResponseBody
 	public ResponseEntity<Map<String,List<Map<String, Object>>>> processUpload2(
-						@RequestParam MultipartFile file, Model model) throws IOException {
-		
+						@RequestParam MultipartFile file, Model model, HttpServletRequest request) throws IOException {
+		buildUrl(request);
 		File distFile = new File(destDir, file.getOriginalFilename());
 		BufferedOutputStream bout = new BufferedOutputStream(new FileOutputStream(distFile));
 		BufferedInputStream bin = new BufferedInputStream(file.getInputStream());
@@ -157,7 +162,7 @@ public class FileUploadController extends DirectoryWalker<Map<String, Object>> {
 		fileInfo.put("size", file.getSize());
 		fileInfo.put("url", urlPrefix + file.getOriginalFilename());
 		fileInfo.put("thumbnail_url", "#");
-		fileInfo.put("delete_url", "#");
+		fileInfo.put("delete_url", delUrlPrefix + file.getOriginalFilename());
 		fileInfo.put("delete_type", "DELETE");
 		fileList.add(fileInfo);
 		body.put("files", fileList);
@@ -172,7 +177,8 @@ public class FileUploadController extends DirectoryWalker<Map<String, Object>> {
 	@RequestMapping(value="/3", method=RequestMethod.PUT)
 	@ResponseBody
 	public ResponseEntity<Map<String,List<Map<String, Object>>>> processUpload3(
-			@RequestPart("file") Part file) throws IOException {
+			@RequestPart("file") Part file, HttpServletRequest request) throws IOException {
+		buildUrl(request);
 		// Finding the fileName //
         String uploadedFileName = "";
         String contentDisposition = file.getHeader("content-disposition");
@@ -203,7 +209,7 @@ public class FileUploadController extends DirectoryWalker<Map<String, Object>> {
 		fileInfo.put("size", fileSize);
 		fileInfo.put("url", urlPrefix + uploadedFileName);
 		fileInfo.put("thumbnail_url", "#");
-		fileInfo.put("delete_url", "#");
+		fileInfo.put("delete_url", delUrlPrefix + uploadedFileName);
 		fileInfo.put("delete_type", "DELETE");
 		fileList.add(fileInfo);
 		body.put("files", fileList);
@@ -214,6 +220,26 @@ public class FileUploadController extends DirectoryWalker<Map<String, Object>> {
 		return new ResponseEntity<>(body, headers, HttpStatus.CREATED);
 	}
 	
-	
+	@RequestMapping(value = "/delete" , method = {DELETE}) 
+	@ResponseBody 
+	public ResponseEntity<List<Map<String, Object>>> delete(@RequestParam String fileName) {
+		logger.debug("fileName: {}", fileName);
+		File file = new File(destDir, fileName);
+		boolean deleted = file.delete();
+		Map<String, Object> success = new LinkedHashMap<>();
+		success.put("success", deleted);
+		List<Map<String, Object>> results = new ArrayList<>();
+		results.add(success);
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(APPLICATION_JSON);
+		HttpStatus statusCode;
+		if (deleted) {
+			statusCode = OK;
+		} else {
+			statusCode = ACCEPTED;
+		}
+		return new ResponseEntity<>(results, headers, statusCode);
+
+	}
 	
 }
