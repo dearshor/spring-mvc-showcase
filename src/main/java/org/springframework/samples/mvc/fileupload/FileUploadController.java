@@ -1,6 +1,7 @@
 package org.springframework.samples.mvc.fileupload;
 
 import static org.springframework.http.HttpStatus.ACCEPTED;
+import static org.springframework.http.HttpStatus.NOT_MODIFIED;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.http.MediaType.IMAGE_JPEG;
@@ -42,6 +43,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -79,12 +81,21 @@ public class FileUploadController extends DirectoryWalker<Map<String, Object>> {
 	}
 	
 	@RequestMapping(value = "/image", method = GET)
-	public @ResponseBody ResponseEntity<byte[]> image(@RequestParam String fileName) throws IOException {
+	public ResponseEntity<byte[]> image(@RequestParam String fileName, WebRequest request) throws IOException {
 		logger.debug("fileName: {}", fileName);
+		long lastModified = lastModifiedOf(fileName);
+		if (request.checkNotModified(lastModified)) {
+			return new ResponseEntity<>(NOT_MODIFIED);
+		}
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(IMAGE_JPEG);
 		headers.setContentDispositionFormData("imageFile", fileName);
 		return new ResponseEntity<>(imageFileData(fileName), headers, OK);
+	}
+
+	private long lastModifiedOf(String fileName) {
+		File destFile = new File(destDir, fileName);
+		return destFile.lastModified();
 	}
 
 	private byte[] imageFileData(String fileName) throws IOException {
