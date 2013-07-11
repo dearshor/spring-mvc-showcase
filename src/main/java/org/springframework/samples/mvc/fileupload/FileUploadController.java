@@ -1,31 +1,5 @@
 package org.springframework.samples.mvc.fileupload;
 
-import static org.springframework.http.HttpStatus.ACCEPTED;
-import static org.springframework.http.HttpStatus.NOT_MODIFIED;
-import static org.springframework.http.HttpStatus.OK;
-import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.http.MediaType.IMAGE_JPEG;
-import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
-import static org.springframework.web.bind.annotation.RequestMethod.GET;
-
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.annotation.PostConstruct;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.Part;
-
 import org.apache.commons.io.DirectoryWalker;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -36,16 +10,20 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.mvc.extensions.ajax.AjaxUtils;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.multipart.MultipartFile;
+
+import javax.annotation.PostConstruct;
+import javax.servlet.http.HttpServletRequest;
+import java.io.*;
+import java.util.*;
+
+import static org.springframework.http.HttpStatus.*;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.http.MediaType.IMAGE_JPEG;
+import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
+import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
 @Controller
 @RequestMapping("/fileupload")
@@ -188,36 +166,37 @@ public class FileUploadController extends DirectoryWalker<Map<String, Object>> {
 	@RequestMapping(value="/3", method=RequestMethod.PUT)
 	@ResponseBody
 	public ResponseEntity<Map<String,List<Map<String, Object>>>> processUpload3(
-			@RequestPart("file") Part file, HttpServletRequest request) throws IOException {
+			@RequestBody byte[] file, HttpServletRequest request) throws IOException {
 		buildUrl(request);
 		// Finding the fileName //
-        String uploadedFileName = "";
-        String contentDisposition = file.getHeader("content-disposition");
+        String uploadedFileName = UUID.randomUUID().toString() + ".jpg";
+//        String contentDisposition = file.getHeader("content-disposition");
         // TODO use regex to extract filename from content-disposition
-		for (String temp : contentDisposition.split(";"))
+		/*for (String temp : contentDisposition.split(";"))
         {
           if (temp.trim().startsWith("filename"))
            {
               uploadedFileName = temp.substring(temp.indexOf('=') + 1).trim().replace("\"", "");
            }
-        }
+        }*/
 		File distFile = new File(destDir, uploadedFileName);
 		BufferedOutputStream bout = new BufferedOutputStream(new FileOutputStream(distFile));
-		InputStream bin = file.getInputStream();
+		/*InputStream bin = file.getInputStream();
 		byte[] bytesToProcess = new byte[2048];
 		int bytesReaded;
 		int fileSize = 0;
 		while ((bytesReaded = bin.read(bytesToProcess)) > -1) {
 			bout.write(bytesToProcess, 0, bytesReaded);
 			fileSize += bytesReaded;
-		}
+		}*/
+        bout.write(file);
 		bout.close();
 		
 		Map<String,List<Map<String, Object>>> body = new LinkedHashMap<>();
 		List<Map<String, Object>> fileList = new ArrayList<>();
 		Map<String, Object> fileInfo = new LinkedHashMap<>();
 		fileInfo.put("name", uploadedFileName);
-		fileInfo.put("size", fileSize);
+		fileInfo.put("size", file.length);
 		fileInfo.put("url", urlPrefix + uploadedFileName);
 		fileInfo.put("thumbnail_url", "#");
 		fileInfo.put("delete_url", delUrlPrefix + uploadedFileName);

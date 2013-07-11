@@ -1,7 +1,7 @@
 package org.springframework.samples.mvc.messageconverters;
 
-import javax.validation.Valid;
-
+import com.sun.syndication.feed.atom.Feed;
+import com.sun.syndication.feed.rss.Channel;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -9,14 +9,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
-import com.sun.syndication.feed.atom.Feed;
-import com.sun.syndication.feed.rss.Channel;
+import javax.validation.Valid;
 
 @Controller
 @RequestMapping("/messageconverters")
@@ -63,7 +58,7 @@ public class MessageConvertersController {
 
 	// MappingJacksonHttpMessageConverter (requires Jackson on the classpath - particularly useful for serving JavaScript clients that expect to work with JSON)
 
-	@RequestMapping(value="/json", method=RequestMethod.POST)
+	@RequestMapping(value="/json", method=RequestMethod.PUT)
 	public @ResponseBody String readJson(@Valid @RequestBody JavaBean bean) {
 		return "Read from JSON: " + bean;
 	}

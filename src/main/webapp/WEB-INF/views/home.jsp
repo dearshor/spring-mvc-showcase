@@ -554,7 +554,7 @@ $(document).ready(function() {
 		var data = form.hasClass("invalid") ?
 				"{ \"foo\": \"bar\" }" : 
 				"{ \"foo\": \"bar\", \"fruit\": \"apple\" }";
-		$.ajax({ type: "POST", url: form.attr("action"), data: data, contentType: "application/json", dataType: "text", success: function(text) { MvcUtil.showSuccessResponse(text, button); }, error: function(xhr) { MvcUtil.showErrorResponse(xhr.responseText, button); }});
+		$.ajax({ type: "PUT", url: form.attr("action"), data: data, contentType: "application/json", dataType: "text", success: function(text) { MvcUtil.showSuccessResponse(text, button); }, error: function(xhr) { MvcUtil.showErrorResponse(xhr.responseText, button); }});
 		return false;
 	});
 
