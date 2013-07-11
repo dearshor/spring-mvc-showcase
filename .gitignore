@@ -8,3 +8,5 @@ src/main/webapp/META-INF
 .idea
 *.iml
 /.sublime*
+/*.sublime-project
+/*.sublime-workspace
